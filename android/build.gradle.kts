@@ -14,16 +14,6 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-subprojects {
-    afterEvaluate {
-        if (name == "flutter_gl") {
-            extensions.findByType(com.android.build.gradle.LibraryExtension::class.java)?.apply {
-                namespace = "com.alnitak.flutter_gl"
-            }
-        }
-    }
-}
-
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

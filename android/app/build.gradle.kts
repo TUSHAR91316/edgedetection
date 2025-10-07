@@ -31,6 +31,7 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++17"
+                arguments += "-DOpenCV_DIR=C:/opencv"
             }
         }
     }

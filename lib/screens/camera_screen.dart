@@ -31,7 +31,7 @@ class _CameraScreenState extends State<CameraScreen> {
       imageFormatGroup: ImageFormatGroup.bgra8888,
     );
     await _controller!.initialize();
-    _controller!.startImageStream(_processFrame);
+    await _controller!.startImageStream(_processFrame);
     setState(() {});
   }
 
@@ -39,37 +39,46 @@ class _CameraScreenState extends State<CameraScreen> {
     if (_isProcessing) return;
     _isProcessing = true;
 
-    final bytes = image.planes[0].bytes;
-    final width = image.width;
-    final height = image.height;
+    try {
+      final bytes = image.planes[0].bytes;
+      final width = image.width;
+      final height = image.height;
 
-    final ptr = malloc.allocate<ffi.Uint8>(bytes.length);
-    ptr.asTypedList(bytes.length).setAll(0, bytes);
+      final ptr = malloc.allocate<ffi.Uint8>(bytes.length);
+      ptr.asTypedList(bytes.length).setAll(0, bytes);
 
-    // Process frame via native C++
-    processFrame(ptr, width, height);
+      processFrame(ptr, width, height);
 
-    // Copy back to Flutter
-    final result = Uint8List.fromList(ptr.asTypedList(bytes.length));
-    malloc.free(ptr);
+      final result = Uint8List.fromList(ptr.asTypedList(bytes.length));
+      malloc.free(ptr);
 
-    setState(() {
-      _processedImage = result;
-    });
-
-    _isProcessing = false;
+      setState(() => _processedImage = result);
+    } catch (e) {
+      debugPrint('Error processing frame: $e');
+    } finally {
+      _isProcessing = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_controller == null || !_controller!.value.isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Scaffold(
-      body: _controller == null || !_controller!.value.isInitialized
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+      backgroundColor: Colors.black,
+      body: Row(
         children: [
-          Expanded(child: CameraPreview(_controller!)),
+          Expanded(child: CameraPreview(_controller!)), // left
           if (_processedImage != null)
-            Expanded(child: Image.memory(_processedImage!, gaplessPlayback: true)),
+            Expanded(
+              child: Image.memory(
+                _processedImage!,
+                gaplessPlayback: true,
+                fit: BoxFit.cover,
+              ),
+            ),
         ],
       ),
     );
