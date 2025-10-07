@@ -6,7 +6,7 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-int create_gl_texture(int width, int height) {
+GLuint create_gl_texture(int width, int height) {
     if (width <= 0 || height <= 0) {
         LOGE("create_gl_texture: invalid size %dx%d", width, height);
         return 0;
@@ -28,24 +28,22 @@ int create_gl_texture(int width, int height) {
     glBindTexture(GL_TEXTURE_2D, 0);
 
     LOGI("create_gl_texture: created tex %u (%dx%d)", tex, width, height);
-    return (int)tex;
+    return tex;
 }
 
-void update_gl_texture(int texId, uint8_t* data, int width, int height) {
-    if (texId == 0 || data == nullptr || width <= 0 || height <= 0) {
-        LOGE("update_gl_texture: invalid args texId=%d data=%p %dx%d", texId, data, width, height);
+void update_gl_texture(GLuint texture, uint8_t* data, int width, int height) {
+    if (texture == 0 || data == nullptr || width <= 0 || height <= 0) {
+        LOGE("update_gl_texture: invalid args texture=%u data=%p %dx%d", texture, data, width, height);
         return;
     }
 
-    GLuint tex = (GLuint)texId;
-    glBindTexture(GL_TEXTURE_2D, tex);
+    glBindTexture(GL_TEXTURE_2D, texture);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, (const GLvoid*)data);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void delete_gl_texture(int texId) {
-    if (texId == 0) return;
-    GLuint tex = (GLuint)texId;
-    glDeleteTextures(1, &tex);
-    LOGI("delete_gl_texture: deleted tex %u", tex);
+void delete_gl_texture(GLuint texture) {
+    if (texture == 0) return;
+    glDeleteTextures(1, &texture);
+    LOGI("delete_gl_texture: deleted tex %u", texture);
 }

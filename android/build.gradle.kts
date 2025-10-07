@@ -11,7 +11,7 @@ rootProject.layout.buildDirectory.set(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: org.gradle.api.file.Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.set(newSubprojectBuildDir)
-    project.evaluationDependsOn(":app")
+    // project.evaluationDependsOn(":app") // This line is the likely source of the problem
 }
 
 tasks.register<Delete>("clean") {

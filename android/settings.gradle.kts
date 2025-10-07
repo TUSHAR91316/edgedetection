@@ -24,3 +24,5 @@ plugins {
 }
 
 include(":app")
+
+//apply(from = file("flutter.gradle"))

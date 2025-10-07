@@ -1,9 +1,7 @@
-import 'dart:ffi' as ffi;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:ffi/ffi.dart';
-import '../native_bridge.dart';
+import 'package:flutter/services.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -13,9 +11,12 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
+  static const _channel = MethodChannel('com.example.edgedetection/native');
+
   CameraController? _controller;
-  Uint8List? _processedImage;
   bool _isProcessing = false;
+  int? _textureId;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -24,35 +25,39 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _initCamera() async {
-    final cameras = await availableCameras();
-    _controller = CameraController(
-      cameras.first,
-      ResolutionPreset.medium,
-      imageFormatGroup: ImageFormatGroup.bgra8888,
-    );
-    await _controller!.initialize();
-    await _controller!.startImageStream(_processFrame);
-    setState(() {});
+    try {
+      final cameras = await availableCameras();
+      _controller = CameraController(
+        cameras.first,
+        ResolutionPreset.medium,
+        imageFormatGroup: ImageFormatGroup.bgra8888,
+        enableAudio: false,
+      );
+      await _controller!.initialize();
+
+      final textureId = await _channel.invokeMethod<int>('createTexture');
+      setState(() {
+        _textureId = textureId;
+        _isLoading = false;
+      });
+
+      await _controller!.startImageStream(_processFrame);
+    } catch (e) {
+      debugPrint("Camera initialization failed: $e");
+      setState(() => _isLoading = false);
+    }
   }
 
   void _processFrame(CameraImage image) async {
-    if (_isProcessing) return;
+    if (_isProcessing || _textureId == null) return;
     _isProcessing = true;
 
     try {
-      final bytes = image.planes[0].bytes;
-      final width = image.width;
-      final height = image.height;
-
-      final ptr = malloc.allocate<ffi.Uint8>(bytes.length);
-      ptr.asTypedList(bytes.length).setAll(0, bytes);
-
-      processFrame(ptr, width, height);
-
-      final result = Uint8List.fromList(ptr.asTypedList(bytes.length));
-      malloc.free(ptr);
-
-      setState(() => _processedImage = result);
+      await _channel.invokeMethod('processFrame', {
+        'bytes': image.planes[0].bytes,
+        'width': image.width,
+        'height': image.height,
+      });
     } catch (e) {
       debugPrint('Error processing frame: $e');
     } finally {
@@ -62,25 +67,34 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_controller == null || !_controller!.value.isInitialized) {
-      return const Center(child: CircularProgressIndicator());
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_textureId == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: Text("Failed to initialize edge detection")),
+      );
     }
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Row(
-        children: [
-          Expanded(child: CameraPreview(_controller!)), // left
-          if (_processedImage != null)
-            Expanded(
-              child: Image.memory(
-                _processedImage!,
-                gaplessPlayback: true,
-                fit: BoxFit.cover,
-              ),
-            ),
-        ],
+      body: Center(
+        child: Texture(textureId: _textureId!),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    if (_textureId != null) {
+      _channel.invokeMethod('deleteTexture');
+    }
+    _controller?.dispose();
+    super.dispose();
   }
 }
