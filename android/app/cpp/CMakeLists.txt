@@ -7,4 +7,4 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 find_library(log-lib log)
-target_link_libraries(native_opencv ${OpenCV_LIBS} ${log-lib})
+target_link_libraries(native_opencv ${OpenCV_LIBS} ${log-lib} GLESv2)
