@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (statsElement && frameImage) {
         frameImage.onload = () => {
             const width = frameImage.naturalWidth;
-            const height = frame.naturalHeight;
+            const height = frameImage.naturalHeight;
             statsElement.innerText = `Resolution: ${width}x${height}`;
         };
 
