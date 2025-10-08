@@ -18,22 +18,25 @@ Java_com_example_edgedetection_NativeBridge_processFrameToPNG(
 
     // Create a Mat from the camera data
     cv::Mat bgra_input(height, width, CV_8UC4, (unsigned char *)data);
-    
-    // Clone the input to create the output image that we will modify.
-    cv::Mat output_image = bgra_input.clone();
     env->ReleaseByteArrayElements(frameData, data, JNI_ABORT);
 
-    // --- Edge Detection on the full image ---
+    // Rotate the image 90 degrees clockwise to match the display orientation.
+    cv::Mat rotated_image;
+    cv::rotate(bgra_input, rotated_image, cv::ROTATE_90_CLOCKWISE);
+
+    // Clone the rotated image to create the final output image.
+    cv::Mat output_image = rotated_image.clone();
+
+    // --- Edge Detection on the rotated image ---
     cv::Mat gray, edges;
-    cv::cvtColor(bgra_input, gray, cv::COLOR_BGRA2GRAY);
+    cv::cvtColor(rotated_image, gray, cv::COLOR_BGRA2GRAY);
     cv::GaussianBlur(gray, gray, cv::Size(5, 5), 0);
     cv::Canny(gray, edges, 100, 200);
 
-    // --- Create a Region of Interest (ROI) for the top 30% of the image ---
-    int roi_height = height * 0.3;
-    cv::Rect top_roi_rect(0, 0, width, roi_height);
+    // --- Create a Region of Interest (ROI) for the top 30% of the rotated image ---
+    int roi_height = rotated_image.rows * 0.3;
+    cv::Rect top_roi_rect(0, 0, rotated_image.cols, roi_height);
 
-    // Get a reference to the top part of the output image and the edges mask.
     cv::Mat output_roi = output_image(top_roi_rect);
     cv::Mat edges_roi = edges(top_roi_rect);
 
