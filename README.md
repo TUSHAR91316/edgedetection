@@ -102,7 +102,7 @@ graph TD
 ---
 
 ## 📦 Project Structure
-```
+```text
 edgedetection/
 ├── android/
 │   ├── app/
