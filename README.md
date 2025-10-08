@@ -1,4 +1,4 @@
-# Edge Detection App
+![Screenshot_2025-10-08-13-39-45-68_39bef26cf97d0f1b16372f0891a026f7](https://github.com/user-attachments/assets/6666fc4b-1b23-4461-9fbf-e582f6ab350e)# Edge Detection App
 
 This project is an Android application that performs real-time edge detection on a live camera feed using a native C++/OpenCV backend. The UI is built with Flutter.
 
