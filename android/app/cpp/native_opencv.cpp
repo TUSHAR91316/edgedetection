@@ -16,25 +16,39 @@ Java_com_example_edgedetection_NativeBridge_processFrameToPNG(
         return nullptr;
     }
 
+    // Create a Mat from the camera data
     cv::Mat bgra_input(height, width, CV_8UC4, (unsigned char *)data);
-    cv::Mat gray, edges;
-    cv::cvtColor(bgra_input, gray, cv::COLOR_BGRA2GRAY);
+    
+    // Clone the input to create the output image that we will modify.
+    cv::Mat output_image = bgra_input.clone();
     env->ReleaseByteArrayElements(frameData, data, JNI_ABORT);
 
+    // --- Edge Detection on the full image ---
+    cv::Mat gray, edges;
+    cv::cvtColor(bgra_input, gray, cv::COLOR_BGRA2GRAY);
     cv::GaussianBlur(gray, gray, cv::Size(5, 5), 0);
     cv::Canny(gray, edges, 100, 200);
 
-    // Create an opaque black image.
-    cv::Mat black_background(bgra_input.size(), bgra_input.type(), cv::Scalar(0, 0, 0, 255));
+    // --- Create a Region of Interest (ROI) for the top 30% of the image ---
+    int roi_height = height * 0.3;
+    cv::Rect top_roi_rect(0, 0, width, roi_height);
 
-    // Set the pixels to green where edges are detected.
-    black_background.setTo(cv::Scalar(0, 255, 0, 255), edges);
+    // Get a reference to the top part of the output image and the edges mask.
+    cv::Mat output_roi = output_image(top_roi_rect);
+    cv::Mat edges_roi = edges(top_roi_rect);
 
+    // Set the background of the top ROI to opaque black.
+    output_roi.setTo(cv::Scalar(0, 0, 0, 255));
+
+    // Draw the green edges onto the black background in the top ROI.
+    output_roi.setTo(cv::Scalar(0, 255, 0, 255), edges_roi);
+
+    // --- Encode the final modified image to PNG ---
     std::vector<uchar> png_buffer;
     std::vector<int> params;
     params.push_back(cv::IMWRITE_PNG_COMPRESSION);
     params.push_back(3);
-    cv::imencode(".png", black_background, png_buffer, params);
+    cv::imencode(".png", output_image, png_buffer, params);
 
     jbyteArray result = env->NewByteArray(png_buffer.size());
     if (result == nullptr) {
