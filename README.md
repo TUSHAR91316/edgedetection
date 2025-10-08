@@ -9,6 +9,7 @@ This project is an Android application that performs real-time edge detection on
 *   **Split-Screen Display:** The processed output is displayed in a split-screen format:
     *   The top 30% of the screen shows the detected edges (green lines on an opaque black background).
     *   The bottom 70% shows the original, unprocessed camera feed.
+*   **Web Viewer:** A minimal web viewer built with TypeScript and HTML displays a static sample frame processed by the Android application, including a basic text overlay for frame statistics like resolution.
 
 ## Architecture and Frame Flow
 
