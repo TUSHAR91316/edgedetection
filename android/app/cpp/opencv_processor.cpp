@@ -1,9 +1,21 @@
-#include "opencv_processor.h"
 #include <opencv2/opencv.hpp>
-#include <android/log.h>
+#include <vector>
 
-#define LOG_TAG "opencv_processor"
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+using namespace cv;
+using namespace std;
 
-// The definition of processFrame is now in native_opencv.cpp.
-// This file is kept for future OpenCV processing functions.
+Mat detectEdges(const Mat &input) {
+    Mat gray, edges, output;
+    cvtColor(input, gray, COLOR_RGBA2GRAY);
+    Canny(gray, edges, 100, 200);
+
+    output = Mat::zeros(input.size(), CV_8UC4);
+    for (int y = 0; y < edges.rows; y++) {
+        for (int x = 0; x < edges.cols; x++) {
+            if (edges.at<uchar>(y, x) > 0) {
+                output.at<Vec4b>(y, x) = Vec4b(0, 255, 0, 255);
+            }
+        }
+    }
+    return output;
+}

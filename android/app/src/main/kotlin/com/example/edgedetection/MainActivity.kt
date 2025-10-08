@@ -5,41 +5,31 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-
-    private lateinit var nativeBridge: NativeBridge
-    private val channelName = "com.example.edgedetection/native"
+    private val CHANNEL = "edge_detection_channel"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // Pass FlutterEngine's textureRegistry to NativeBridge
-        nativeBridge = NativeBridge(flutterEngine.renderer) // or flutterEngine.textureRegistry
-
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
-                when (call.method) {
-                    "createTexture" -> {
-                        result.success(nativeBridge.createTexture())
+                if (call.method == "processFrame") {
+                    try {
+                        val frameData = call.argument<ByteArray>("frameData")
+                        val width = call.argument<Int>("width") ?: 0
+                        val height = call.argument<Int>("height") ?: 0
+
+                        if (frameData != null && width > 0 && height > 0) {
+                            val processed = NativeBridge.processFrameToPNG(frameData, width, height)
+                            result.success(processed)
+                        } else {
+                            result.error("INVALID_INPUT", "Invalid frame data", null)
+                        }
+                    } catch (e: Exception) {
+                        result.error("NATIVE_ERROR", e.localizedMessage, null)
                     }
-                    "deleteTexture" -> {
-                        nativeBridge.release()
-                        result.success(null)
-                    }
-                    "processFrame" -> {
-                        val args = call.arguments as Map<String, Any>
-                        val frameData = args["bytes"] as ByteArray
-                        val width = args["width"] as Int
-                        val height = args["height"] as Int
-                        nativeBridge.renderFrame(frameData, width, height)
-                        result.success(null)
-                    }
-                    else -> result.notImplemented()
+                } else {
+                    result.notImplemented()
                 }
             }
-    }
-
-    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
-        super.cleanUpFlutterEngine(flutterEngine)
-        nativeBridge.release()
     }
 }
