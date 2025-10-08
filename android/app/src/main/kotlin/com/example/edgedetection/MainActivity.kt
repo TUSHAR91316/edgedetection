@@ -5,7 +5,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "edge_detection_channel"
+    private val CHANNEL = "edge_detector_channel"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -14,7 +14,7 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 if (call.method == "processFrame") {
                     try {
-                        val frameData = call.argument<ByteArray>("frameData")
+                        val frameData = call.argument<ByteArray>("bytes")
                         val width = call.argument<Int>("width") ?: 0
                         val height = call.argument<Int>("height") ?: 0
 

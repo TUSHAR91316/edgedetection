@@ -7,48 +7,48 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
-extern "C"
-JNIEXPORT jbyteArray JNICALL
-com_example_edgedetection_MainActivity_processFrameToPNG(
-        JNIEnv* env,
-        jobject /* this */,
-        jbyteArray frameData,
-        jint width,
-        jint height) {
-
-    jbyte* data = env->GetByteArrayElements(frameData, nullptr);
+extern "C" JNIEXPORT jbyteArray JNICALL
+Java_com_example_edgedetection_NativeBridge_processFrameToPNG(
+    JNIEnv *env, jclass, jbyteArray frameData, jint width, jint height) {
+    jbyte *data = env->GetByteArrayElements(frameData, nullptr);
     if (data == nullptr) {
         LOGE("Frame data is null");
         return nullptr;
     }
 
-    // Assuming input is BGRA format from Flutter camera plugin
-    cv::Mat bgra(height, width, CV_8UC4, (unsigned char*)data);
-    cv::Mat gray, edges;
+    // Create a Mat from the BGRA data and clone it to a new Mat for processing.
+    cv::Mat bgra_input(height, width, CV_8UC4, (unsigned char *)data);
+    cv::Mat processed_image = bgra_input.clone();
 
-    // Process the image
-    cv::cvtColor(bgra, gray, cv::COLOR_BGRA2GRAY);
-    cv::GaussianBlur(gray, gray, cv::Size(3, 3), 0);
-    cv::Canny(gray, edges, 80, 180);
-    bgra.setTo(cv::Scalar(0, 255, 0, 255), edges); // Draw green edges on original image
-
+    // Release the original byte array as we have a copy.
     env->ReleaseByteArrayElements(frameData, data, JNI_ABORT);
 
-    // Encode the processed image to PNG
+    // Perform edge detection.
+    cv::Mat gray, edges;
+    cv::cvtColor(processed_image, gray, cv::COLOR_BGRA2GRAY);
+    
+    // Apply a Gaussian blur to reduce noise and sensitivity.
+    cv::GaussianBlur(gray, gray, cv::Size(5, 5), 0);
+    
+    // Adjust Canny thresholds for less sensitive edge detection.
+    cv::Canny(gray, edges, 100, 200);
+    
+    // Overlay green edges on the processed image.
+    processed_image.setTo(cv::Scalar(0, 255, 0, 255), edges);
+
+    // Encode the processed image to PNG.
     std::vector<uchar> png_buffer;
     std::vector<int> params;
     params.push_back(cv::IMWRITE_PNG_COMPRESSION);
-    params.push_back(3); // A good compromise for speed vs size
-    cv::imencode(".png", bgra, png_buffer, params);
+    params.push_back(3);
+    cv::imencode(".png", processed_image, png_buffer, params);
 
     jbyteArray result = env->NewByteArray(png_buffer.size());
     if (result == nullptr) {
         LOGE("Failed to create new byte array");
-        return nullptr; // out of memory error
+        return nullptr;
     }
-    env->SetByteArrayRegion(result, 0, png_buffer.size(), (jbyte*)png_buffer.data());
-
-    LOGI("PNG processing complete, size: %zu", png_buffer.size());
+    env->SetByteArrayRegion(result, 0, png_buffer.size(), (jbyte *)png_buffer.data());
 
     return result;
 }
