@@ -72,6 +72,7 @@ A real-time edge detection application built with Flutter. The app uses the nati
 
 This project uses Flutter for the UI and delegates heavy image processing to the native Android layer to achieve real-time performance.
 
+<img width="1024" height="1024" alt="Gemini_Generated_Image_nm3pwynm3pwynm3p" src="https://github.com/user-attachments/assets/3de64a9f-ff03-44b9-b710-4fc90a95fdbb" />
 
 
 ### Frame Flow
