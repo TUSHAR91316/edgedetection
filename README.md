@@ -72,15 +72,7 @@ A real-time edge detection application built with Flutter. The app uses the nati
 
 This project uses Flutter for the UI and delegates heavy image processing to the native Android layer to achieve real-time performance.
 
-```mermaid
-graph TD
-    A[Flutter UI<br>camera_screen.dart<br>• Camera Preview Widget<br>• Image.memory for Overlay] -->|CameraImage Stream| B(Native Bridge<br>native_bridge.dart<br>• MethodChannel Invocation)
-    B -->|invokeMethod('processImage')| C{Android Host<br>MainActivity.kt<br>• MethodChannel Handler<br>• Calls JNI function}
-    C -->|Frame Data| D(JNI Native Layer<br>native_opencv.cpp<br>• C++ / OpenCV Processing)
-    D -->|Processed PNG (byte array)| C
-    C -->|Returns byte array| B
-    B -->|Displays PNG in Image widget| A
-```
+
 
 ### Frame Flow
 1.  **Camera Capture**: The Flutter UI displays a camera preview and captures a continuous stream of frames.
