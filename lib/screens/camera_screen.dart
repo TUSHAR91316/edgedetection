@@ -15,6 +15,7 @@ class _CameraScreenState extends State<CameraScreen> {
   CameraController? _controller;
   Uint8List? _processedImage;
   bool _isProcessing = false;
+  bool _showEdgeDetection = false; // Default to normal camera
 
   @override
   void initState() {
@@ -57,6 +58,17 @@ class _CameraScreenState extends State<CameraScreen> {
     if (_isProcessing) {
       return;
     }
+    
+    // If edge detection is disabled, clear any previous image and return
+    if (!_showEdgeDetection) {
+      if (_processedImage != null) {
+        setState(() {
+          _processedImage = null;
+        });
+      }
+      return;
+    }
+
     _isProcessing = true;
     NativeBridge.processFrameToPNG(
       bytes: image.planes[0].bytes,
@@ -91,13 +103,34 @@ class _CameraScreenState extends State<CameraScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
+          // Normal Camera Preview
           CameraPreview(controller),
-          if (_processedImage != null)
+          
+          // Edge Detection Overlay
+          if (_showEdgeDetection && _processedImage != null)
             Image.memory(
               _processedImage!,
               gaplessPlayback: true,
               fit: BoxFit.cover,
             ),
+            
+          // Toggle Button
+          Positioned(
+            bottom: 30,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  setState(() {
+                    _showEdgeDetection = !_showEdgeDetection;
+                  });
+                },
+                label: Text(_showEdgeDetection ? "Show Normal" : "Show Edge"),
+                icon: Icon(_showEdgeDetection ? Icons.camera : Icons.grid_on),
+              ),
+            ),
+          ),
         ],
       ),
     );
